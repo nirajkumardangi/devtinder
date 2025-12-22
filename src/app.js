@@ -2,20 +2,26 @@ const express = require('express');
 
 const app = express();
 
-app.use('/hello/2', (req, res) => {
-  res.send('Hello from hello/2');
+// this will handle all HTTP methods for /user
+app.use('/user', (req, res) => {
+  res.send('Handling all HTTP methods for /user');
 });
 
-app.use('/hello', (req, res) => {
-  res.send('Hello from hello');
+// this will only handle GET call to /user
+app.get('/user', (req, res) => {
+  res.send({ firstName: 'Niraj', lastName: 'Kumar' });
 });
 
-app.use('/test', (req, res) => {
-  res.send('Hello from test');
+// this will only handle POST call to /user
+app.post('/user', (req, res) => {
+  // saving data to DB
+  res.send('data saved successfully to database');
 });
 
-app.use('/', (req, res) => {
-  res.send('Welcome to DevTinder');
+// this will only handle DELETE call to /user
+app.delete('/user', (req, res) => {
+  // deleting data from DB
+  res.send('data deleted successfully from database');
 });
 
 module.exports = app;

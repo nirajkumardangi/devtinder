@@ -1,11 +1,6 @@
 const app = require('./app');
+const PORT = 3000;
 
-// const PORT = 3000;
-
-app.listen(3000, () => {
-  console.log('DevTinder server started');
-});
-
-app.listen(4000, () => {
-  console.log('DevTinder 2nd server started');
+app.listen(PORT, () => {
+  console.log('DevTinder server started on port', PORT);
 });

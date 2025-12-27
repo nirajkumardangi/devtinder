@@ -1,27 +1,24 @@
 const express = require('express');
 
 const app = express();
+const { adminAuth, userAuth } = require('./middlewares/auth');
 
 // Middleware
-app.use(
-  '/user',
-  [
-    (req, res, next) => {
-      console.log('handle route 1');
-      // res.send('1st response!');
-      next();
-    },
-    (req, res, next) => {
-      console.log('handle route 2');
-      // res.send('2nd response!');
-      next();
-    },
-  ],
-  (req, res) => {
-    console.log('handle route 3');
-    res.send('3rd response!');
-    next();
-  }
-);
+
+// Handle Auth Middleware for all GET, POST,...Request
+app.use('/admin', adminAuth);
+
+app.get('/user', userAuth, (req, res) => {
+  res.send('Fetching user data');
+});
+
+// Get all user data
+app.get('/admin/getAllData', (req, res) => {
+  res.send('All User Data Sends!');
+});
+
+app.delete('/admin/deleteAllData', (req, res) => {
+  res.send('All Users Data Deleted');
+});
 
 module.exports = app;

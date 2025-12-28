@@ -1,6 +1,17 @@
+require('dotenv').config();
 const app = require('./app');
-const PORT = 3000;
+const connectDB = require('./config/db');
 
-app.listen(PORT, () => {
-  console.log('DevTinder server started on port', PORT);
-});
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(process.env.PORT || 3000, () => {
+      console.log(`Server running`);
+    });
+  } catch (error) {
+    console.error(error);
+    process.exit(1);
+  }
+};
+
+startServer();

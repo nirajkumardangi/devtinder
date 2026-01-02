@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const validator = require("validator");
 
 // Creating User Schema/Blueprint/Structure using mongoose
 const userSchema = new mongoose.Schema(
@@ -16,46 +17,50 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      match: [/^\S+@\S+\.\S+$/, "Please provide a valid email address"],
+      validate: {
+        validator: validator.isEmail,
+        message: "Envaid email address",
+      },
+      // match: [/^\S+@\S+\.\S+$/, "Please provide a valid email address"],
     },
     password: {
       type: String,
-      required: ["Password is required"],
+      required: [true, "Password is required"],
       trim: true,
       minLength: [8, "Password must be at least 8 characters"],
       select: false,
     },
-    age: {
-      type: Number,
-      min: [18, "Age must be at least 18"],
-      max: [100, "Age must be below 100"],
-      default: 18,
-    },
-    gender: {
-      type: String,
-      required: true,
-      lowecase: true,
-      validate: {
-        validator: function (value) {
-          return ["male", "female", "other"].includes(value);
-        },
-        message: "Gender must be male, female or other",
-      },
-    },
-    role: {
-      type: String,
-      enum: ["user", "admin"],
-      default: "user",
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now(),
-      immutable: true,
-    },
+    // age: {
+    //   type: Number,
+    //   min: [18, "Age must be at least 18"],
+    //   max: [100, "Age must be below 100"],
+    //   default: 18,
+    // },
+    // gender: {
+    //   type: String,
+    //   required: true,
+    //   lowecase: true,
+    //   validate: {
+    //     validator: function (value) {
+    //       return ["male", "female", "other"].includes(value);
+    //     },
+    //     message: "Gender must be male, female or other",
+    //   },
+    // },
+    // role: {
+    //   type: String,
+    //   enum: ["user", "admin"],
+    //   default: "user",
+    // },
+    // isActive: {
+    //   type: Boolean,
+    //   default: true,
+    // },
+    // createdAt: {
+    //   type: Date,
+    //   default: Date.now(),
+    //   immutable: true,
+    // },
   },
   { timestamps: true }
 );

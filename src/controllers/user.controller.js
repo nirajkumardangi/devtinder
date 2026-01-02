@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const validator = require("validator");
 
 // CREATE
 exports.createUser = async (req, res) => {
@@ -20,19 +21,49 @@ exports.getUser = async (req, res) => {
   }
 };
 
-// UPDATE
+// PATCH API (Update Profile)
 exports.updateUser = async (req, res) => {
   try {
+    const ALLOWED_UPDATES = ["name"];
+    const updates = Object.keys(req.body);
+
+    // FIELD WHITELIST CHECK
+    const isValidOperation = updates.every((field) =>
+      ALLOWED_UPDATES.includes(field)
+    );
+
+    if (!isValidOperation) {
+      throw new Error("Invalid update fields");
+    }
+
+    // FIELD LEVEL VALIDATION
+    if (req.body.name) {
+      if (
+        !validator.isLength(req.body.name, {
+          min: 2,
+          max: 20,
+        })
+      ) {
+        throw new Error("First name must be 2-20 characters");
+      }
+      req.body.name = validator.escape(req.body.name.trim());
+    }
+
+    // UPDATE USER
     const user = await User.findByIdAndUpdate(req.params.id, req.body, {
       new: true, // return updated document
       runValidators: true, // enables schema validation
     });
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json(user);
+    res.json({
+      message: "Profile updated successfully",
+      data: user,
+    });
+
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -44,7 +75,7 @@ exports.deleteUser = async (req, res) => {
     const user = await User.findByIdAndDelete(req.params.id);
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     res.status(200).json(user);
@@ -56,13 +87,43 @@ exports.deleteUser = async (req, res) => {
 // SIGN-UP
 exports.signup = async (req, res) => {
   try {
+    // DATA SANITIZATION (PICK FIELDS)
     const { name, email, password } = req.body;
 
-    const user = await User.create({ name, email, password });
+    // API LEVEL VALIDATION
+    if ((!name, !email, !password)) {
+      throw new Error("All required fields must be provided");
+    }
+
+    if (!validator.isEmail(email)) {
+      throw new Error("Invalid email format");
+    }
+
+    if (
+      !validator.isStrongPassword(password, {
+        minLength: 6,
+        minLowercase: 1,
+        minUppercase: 1,
+        minSymbols: 1,
+        minNumbers: 1,
+      })
+    ) {
+      throw new Error(
+        "Password must be strong (6 chars, upper, lower, number)"
+      );
+    }
+
+    // BUSINESS LOGIC
+    const user = await User.create({
+      name: validator.escape(name.trim()),
+      email: email.toLowerCase(),
+      password,
+    });
 
     res.status(201).json({
-      message: 'User created',
+      message: "User signed up successfully",
       data: {
+        id: user._id,
         name: user.name,
         email: user.email,
       },

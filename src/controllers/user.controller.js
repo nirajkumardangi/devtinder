@@ -94,3 +94,25 @@ exports.getUserByEmail = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// API – Feed API
+exports.getAllUser = async (req, res) => {
+  try {
+    const users = await User.find({});
+
+    if (!users) {
+      return res.status(404).json({
+        message: "Yoy don't have any user",
+      });
+    }
+
+    res.json({
+      message: 'Users fetched successfully',
+      users,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Something went wrong',
+    });
+  }
+};

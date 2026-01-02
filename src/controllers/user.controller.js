@@ -69,35 +69,28 @@ exports.signup = async (req, res) => {
   }
 };
 
-// Get User by Email
-exports.getUserByEmail = async (req, res) => {
+// Get User by Email or Feed (all users)
+exports.getUsers = async (req, res) => {
   try {
     const email = req.query.email;
 
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
-    }
+    // Case-I: Search by email --- http://localhost:3000/api/users?email=niraj@example.com
+    if (email) {
+      const user = await User.findOne({ email });
 
-    const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(404).json({
+          message: "User not found",
+        });
+      }
 
-    if (!user) {
-      return res.status(404).json({
-        message: 'User not found',
+      res.json({
+        message: "User found",
+        user,
       });
     }
 
-    res.json({
-      message: 'User found',
-      user,
-    });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// API – Feed API
-exports.getAllUser = async (req, res) => {
-  try {
+    // Case-II: Feed (all users) --- http://localhost:3000/api/users/
     const users = await User.find({});
 
     if (!users) {
@@ -107,12 +100,10 @@ exports.getAllUser = async (req, res) => {
     }
 
     res.json({
-      message: 'Users fetched successfully',
+      message: "Users fetched successfully",
       users,
     });
-  } catch (error) {
-    res.status(500).json({
-      message: 'Something went wrong',
-    });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
   }
 };

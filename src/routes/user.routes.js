@@ -7,16 +7,14 @@ const {
   updateUser,
   deleteUser,
   signup,
-  getUserByEmail,
-  getAllUser,
+  getUsers
 } = require('../controllers/user.controller');
 
 // AUTH ROUTES
 router.post('/signup', signup);
 
 // SEARCH ROUTES
-router.get('/email', getUserByEmail);
-router.get('/feed', getAllUser);
+router.get('/', getUsers);
 
 // CRUD ROUTES
 router.post('/', createUser);

@@ -2,64 +2,6 @@ const User = require("../models/User");
 const validator = require("validator");
 
 /**
- * SIGN UP (ONLY WAY TO CREATE USER)
- */
-exports.signup = async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-
-    // REQUIRED FIELD CHECK
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        message: "All required fields must be provided",
-      });
-    }
-
-    // EMAIL VALIDATION
-    if (!validator.isEmail(email)) {
-      return res.status(400).json({ message: "Invalid email format" });
-    }
-
-    // PASSWORD VALIDATION
-    if (
-      !validator.isStrongPassword(password, {
-        minLength: 8,
-        minLowercase: 1,
-        minUppercase: 1,
-        minNumbers: 1,
-        minSymbols: 1,
-      })
-    ) {
-      return res.status(400).json({
-        message:
-          "Password must be at least 8 characters and include upper, lower, number & symbol",
-      });
-    }
-
-    // CREATE USER
-    const user = await User.create({
-      name: validator.escape(name.trim()),
-      email: email.toLowerCase(),
-      password,
-    });
-
-    res.status(201).json({
-      message: "User signed up successfully",
-      data: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    if (error.code === 11000) {
-      return res.status(409).json({ message: "Email already exists" });
-    }
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-/**
  * GET SINGLE USER
  */
 exports.getUser = async (req, res) => {

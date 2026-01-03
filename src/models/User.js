@@ -1,15 +1,15 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const validator = require("validator");
+const bcrypt = require("bcryptjs");
 
-// Creating User Schema/Blueprint/Structure using mongoose
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: [true, "Name is required"],
       trim: true,
-      minLength: [3, "Name must be at least 3 characters"],
-      maxLength: [50, "Name must be at least most 50 characters"],
+      minLength: [2, "Name must be at least 2 characters"],
+      maxLength: [20, "Name must be at most 20 characters"],
     },
     email: {
       type: String,
@@ -19,51 +19,24 @@ const userSchema = new mongoose.Schema(
       trim: true,
       validate: {
         validator: validator.isEmail,
-        message: "Envaid email address",
+        message: "Invalid email address",
       },
-      // match: [/^\S+@\S+\.\S+$/, "Please provide a valid email address"],
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
-      trim: true,
+      required: true,
       minLength: [8, "Password must be at least 8 characters"],
       select: false,
     },
-    // age: {
-    //   type: Number,
-    //   min: [18, "Age must be at least 18"],
-    //   max: [100, "Age must be below 100"],
-    //   default: 18,
-    // },
-    // gender: {
-    //   type: String,
-    //   required: true,
-    //   lowecase: true,
-    //   validate: {
-    //     validator: function (value) {
-    //       return ["male", "female", "other"].includes(value);
-    //     },
-    //     message: "Gender must be male, female or other",
-    //   },
-    // },
-    // role: {
-    //   type: String,
-    //   enum: ["user", "admin"],
-    //   default: "user",
-    // },
-    // isActive: {
-    //   type: Boolean,
-    //   default: true,
-    // },
-    // createdAt: {
-    //   type: Date,
-    //   default: Date.now(),
-    //   immutable: true,
-    // },
   },
   { timestamps: true }
 );
 
-// Creating Model
-module.exports = mongoose.model('User', userSchema);
+// HASH PASSWORD BEFORE SAVE
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
+
+module.exports = mongoose.model("User", userSchema);

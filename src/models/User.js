@@ -17,9 +17,10 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      validate: {
-        validator: validator.isEmail,
-        message: "Invalid email address",
+      validate(value) {
+        if (!validator.isEmail(value)) {
+          throw new Error("Invalid Email");
+        }
       },
     },
     password: {
@@ -27,6 +28,11 @@ const userSchema = new mongoose.Schema(
       required: true,
       minLength: [8, "Password must be at least 8 characters"],
       select: false,
+      validate(value) {
+        if (!validator.isStrongPassword(value)) {
+          throw new Error("Password is weak");
+        }
+      },
     },
   },
   { timestamps: true }

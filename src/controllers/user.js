@@ -1,33 +1,29 @@
+require("dotenv").config();
 const User = require("../models/User");
 const validator = require("validator");
+const jwt = require("jsonwebtoken");
 
 /**
  * GET SINGLE USER
  */
 exports.getUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const { token } = req.cookies;
+
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_TOKEN);
+    const user = await User.findById(decoded._id).select("name email");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json(user);
+    res.status(200).json(user);
   } catch (error) {
-    res.status(400).json({ message: "Invalid user ID" });
-  }
-};
-
-/**
- * DYNAMIC SEARCH USING QUERY PARAMS
- * GET /users/search?firstName=Akshay&age=30
- */
-
-exports.searchUser = async (req, res) => {
-  try {
-    console.log(req);
-  } catch (err) {
-    console.log(err);
+    return res.status(401).json({ message: "Invalid or expired token" });
   }
 };
 
@@ -36,6 +32,17 @@ exports.searchUser = async (req, res) => {
  */
 exports.updateUser = async (req, res) => {
   try {
+    // 1. Read token from cookies
+    const { token } = req.cookies;
+
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // 2. Verify token
+    const decoded = jwt.verify(token, process.env.JWT_TOKEN);
+
+    // 3. Verify allowed update
     const ALLOWED_UPDATES = ["name"];
     const updates = Object.keys(req.body);
 
@@ -47,7 +54,7 @@ exports.updateUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid update fields" });
     }
 
-    if (req.body.name) {
+    if (req.body.name.trim()) {
       if (!validator.isLength(req.body.name, { min: 2, max: 20 })) {
         return res
           .status(400)
@@ -56,7 +63,7 @@ exports.updateUser = async (req, res) => {
       req.body.name = validator.escape(req.body.name.trim());
     }
 
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+    const user = await User.findByIdAndUpdate(decoded._id, req.body, {
       new: true,
       runValidators: true,
     });
@@ -67,10 +74,14 @@ exports.updateUser = async (req, res) => {
 
     res.json({
       message: "Profile updated successfully",
-      data: user,
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
     });
   } catch (error) {
-    res.status(400).json({ message: "Update failed" });
+    return res.status(401).json({ message: "Unauthorized" });
   }
 };
 
@@ -79,7 +90,15 @@ exports.updateUser = async (req, res) => {
  */
 exports.deleteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const { token } = req.cookies;
+
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_TOKEN);
+
+    const user = await User.findByIdAndDelete(decoded._id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -87,7 +106,7 @@ exports.deleteUser = async (req, res) => {
 
     res.json({ message: "User deleted successfully" });
   } catch (error) {
-    res.status(400).json({ message: "Invalid user ID" });
+    res.status(400).json({ message: "Unauthorized" });
   }
 };
 
@@ -106,7 +125,7 @@ exports.getUsers = async (req, res) => {
     const users = await User.find(filter)
       .select("email name") // include these fields
       .collation({ locale: "en", strength: 2 }) // case-insensitive sort
-      .sort({ name: 1 }) // simple sort
+      .sort({ name: 1 }); // simple sort
 
     if (users.length === 0) {
       return res.status(404).json({ message: "No users found" });

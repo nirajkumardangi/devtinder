@@ -1,6 +1,7 @@
+require("dotenv").config();
 const User = require("../models/User");
 const validator = require("validator");
-const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 /**
  * SIGN UP
@@ -58,7 +59,7 @@ exports.login = async (req, res) => {
     // 1. Check for missing fields
     if (!email || !password) {
       return res.status(400).json({
-        message: "Email and password are required",
+        message: "Invalid credentials",
       });
     }
 
@@ -70,19 +71,33 @@ exports.login = async (req, res) => {
     // 3. Check if user exists
     if (!user) {
       return res.status(401).json({
-        message: "Invalid email or password",
+        message: "User not found",
       });
     }
 
     // 4. Verify password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
+    const isPasswordValid = await user.comparePassword(password);
+    if (!isPasswordValid) {
       return res.status(401).json({
-        message: "Invalid email or password",
+        message: "Invalid credentials",
       });
     }
 
-    // 5. Success response
+    // 5. Create JWT token
+    const token = jwt.sign(
+      { _id: user._id }, // Payload (user data)
+      process.env.JWT_TOKEN, // Secret key
+      { expiresIn: "7d" } // Token expires in 7 day
+    );
+
+    console.log("Generated Token:", token);
+
+    // 6. Send token in cookie
+    res.cookie("token", token, {
+      maxAge: 8 * 3600000,
+    });
+
+    // 7. Success response
     res.status(200).json({
       message: "Login successful",
       data: {

@@ -19,6 +19,19 @@ exports.getUser = async (req, res) => {
 };
 
 /**
+ * DYNAMIC SEARCH USING QUERY PARAMS
+ * GET /users/search?firstName=Akshay&age=30
+ */
+
+exports.searchUser = async (req, res) => {
+  try {
+    console.log(req);
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+/**
  * UPDATE USER (PROFILE)
  */
 exports.updateUser = async (req, res) => {
@@ -79,25 +92,25 @@ exports.deleteUser = async (req, res) => {
 };
 
 /**
- * GET USERS (EMAIL SEARCH OR FEED)
+ * GET USERS (BY EMAIL/NAME SEARCH OR FEED)
  */
 exports.getUsers = async (req, res) => {
   try {
-    const { email } = req.query;
+    const { email, name } = req.query;
 
-    // SEARCH BY EMAIL
-    if (email) {
-      const user = await User.findOne({ email });
+    const filter = {};
 
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+    if (email) filter.email = email.toLowerCase();
+    if (name) filter.name = { $regex: name, $options: "i" };
 
-      return res.json({ message: "User found", user });
+    const users = await User.find(filter)
+      .select("email name") // include these fields
+      .collation({ locale: "en", strength: 2 }) // case-insensitive sort
+      .sort({ name: 1 }) // simple sort
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "No users found" });
     }
-
-    // FEED
-    const users = await User.find({});
 
     res.json({
       message: "Users fetched successfully",

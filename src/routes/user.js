@@ -6,6 +6,7 @@ const {
   updateUser,
   deleteUser,
   getUsers,
+  searchUser,
 } = require("../controllers/user");
 
 // USERS

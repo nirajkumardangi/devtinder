@@ -1,21 +1,14 @@
 require("dotenv").config();
-const User = require("../models/User");
+const User = require("../models/UserSchema");
 const validator = require("validator");
-const jwt = require("jsonwebtoken");
 
-/**
- * GET SINGLE USER
- */
-exports.getUser = async (req, res) => {
+// GET PROFILE
+exports.getProfile = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    const user = await User.findById(req.user._id).select("name email");
+    const user = req.user;
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
     res.status(200).json({
@@ -26,18 +19,20 @@ exports.getUser = async (req, res) => {
   }
 };
 
-/**
- * UPDATE USER (PROFILE)
- */
-exports.updateUser = async (req, res) => {
+// UPDATE PROFILE
+exports.updateProfile = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    const userId = req.user._id;
 
     // Verify allowed update
     const ALLOWED_UPDATES = ["name"];
     const updates = Object.keys(req.body);
+
+    if (updates.length === 0) {
+      return res.status(400).json({
+        message: "No fields provided for update",
+      });
+    }
 
     const isValidOperation = updates.every((field) =>
       ALLOWED_UPDATES.includes(field)
@@ -47,30 +42,32 @@ exports.updateUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid update fields" });
     }
 
-    if (req.body.name.trim()) {
-      if (!validator.isLength(req.body.name, { min: 2, max: 20 })) {
-        return res
-          .status(400)
-          .json({ message: "Name must be 2–20 characters" });
+    // Validate & sanitize name
+    if (req.body.name !== undefined) {
+      if (!validator.isLength(req.body.name.trim(), { min: 2, max: 20 })) {
+        return res.status(400).json({
+          message: "Name must be between 2 and 20 characters",
+        });
       }
+
       req.body.name = validator.escape(req.body.name.trim());
     }
 
-    const user = await User.findByIdAndUpdate(req.user._id, req.body, {
+    const updatedUser = await User.findByIdAndUpdate(userId, req.body, {
       new: true,
       runValidators: true,
     });
 
-    if (!user) {
+    if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
     res.json({
       message: "Profile updated successfully",
       data: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
       },
     });
   } catch (error) {
@@ -78,51 +75,19 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-/**
- * DELETE USER
- */
-exports.deleteUser = async (req, res) => {
+// DELETE PROFILE
+exports.deleteProfile = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    const userId = req.user._id;
 
-    const user = await User.findByIdAndDelete(req.user._id);
+    const deletedUser = await User.findByIdAndDelete(userId);
 
-    if (!user) {
+    if (!deletedUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({ message: "User deleted successfully" });
-  } catch (error) {
-    res.status(400).json({ message: "Unauthorized" });
-  }
-};
-
-/**
- * GET USERS (BY EMAIL/NAME SEARCH OR FEED)
- */
-exports.getUsers = async (req, res) => {
-  try {
-    const { email, name } = req.query;
-
-    const filter = {};
-
-    if (email) filter.email = email.toLowerCase();
-    if (name) filter.name = { $regex: name, $options: "i" };
-
-    const users = await User.find(filter)
-      .select("email name") // include these fields
-      .collation({ locale: "en", strength: 2 }) // case-insensitive sort
-      .sort({ name: 1 }); // simple sort
-
-    if (users.length === 0) {
-      return res.status(404).json({ message: "No users found" });
-    }
-
-    res.json({
-      message: "Users fetched successfully",
-      users,
+    res.status(200).json({
+      message: "User deleted successfully",
     });
   } catch (error) {
     res.status(500).json({ message: "Server error" });

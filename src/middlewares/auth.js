@@ -1,26 +1,43 @@
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const User = require("../models/UserSchema");
 
 const userAuth = async (req, res, next) => {
   try {
-    const { token } = req.cookies;
+    // 1. Read token from cookies
+    const token = req.cookies?.token;
 
     if (!token) {
       return res.status(401).json({
-        message: "Please login",
+        message: "Authentication required. Please login.",
       });
     }
 
+    // 2.Verify JWT
     const decoded = jwt.verify(token, process.env.JWT_TOKEN);
 
-    req.user = {
-      _id: decoded._id,
-    };
+    if (!decoded || !decoded._id) {
+      return res.status(401).json({
+        message: "Invalid token",
+      });
+    }
 
+    // 3. Fetch user from database
+    const user = await User.findById(decoded._id).select("-password -__v");
+
+    if (!user) {
+      return res.status(401).json({
+        message: "User not found or account deleted",
+      });
+    }
+
+    // 4. Attach user to request
+    req.user = user;
+
+    // 5. Continue to next middleware / route
     next();
   } catch (error) {
-    res.status(401).json({
+    return res.status(401).json({
       message: "Authentication failed",
     });
   }

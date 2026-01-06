@@ -59,7 +59,7 @@ exports.login = async (req, res) => {
     // 1. Check for missing fields
     if (!email || !password) {
       return res.status(400).json({
-        message: "Invalid credentials",
+        message: "Enter email & password",
       });
     }
 
@@ -84,13 +84,7 @@ exports.login = async (req, res) => {
     }
 
     // 5. Create JWT token
-    const token = jwt.sign(
-      { _id: user._id }, // Payload (user data)
-      process.env.JWT_TOKEN, // Secret key
-      { expiresIn: "7d" } // Token expires in 7 day
-    );
-
-    console.log("Generated Token:", token);
+    const token = await user.getJWT();
 
     // 6. Send token in cookie
     res.cookie("token", token, {
@@ -110,4 +104,14 @@ exports.login = async (req, res) => {
     console.error("Login Error:", error);
     res.status(500).json({ message: "Server error" });
   }
+};
+
+/**
+ * LOG-OUT
+ */
+exports.logout = async (req, res) => {
+  res.cookie("token", null, { expires: new Date(Date.now()) });
+  res.status(200).json({
+    message: "Logout successful!",
+  });
 };

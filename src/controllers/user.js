@@ -8,22 +8,21 @@ const jwt = require("jsonwebtoken");
  */
 exports.getUser = async (req, res) => {
   try {
-    const { token } = req.cookies;
-
-    if (!token) {
+    if (!req.user || !req.user._id) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_TOKEN);
-    const user = await User.findById(decoded._id).select("name email");
+    const user = await User.findById(req.user._id).select("name email");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json(user);
+    res.status(200).json({
+      data: user,
+    });
   } catch (error) {
-    return res.status(401).json({ message: "Invalid or expired token" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -32,17 +31,11 @@ exports.getUser = async (req, res) => {
  */
 exports.updateUser = async (req, res) => {
   try {
-    // 1. Read token from cookies
-    const { token } = req.cookies;
-
-    if (!token) {
+    if (!req.user || !req.user._id) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // 2. Verify token
-    const decoded = jwt.verify(token, process.env.JWT_TOKEN);
-
-    // 3. Verify allowed update
+    // Verify allowed update
     const ALLOWED_UPDATES = ["name"];
     const updates = Object.keys(req.body);
 
@@ -63,7 +56,7 @@ exports.updateUser = async (req, res) => {
       req.body.name = validator.escape(req.body.name.trim());
     }
 
-    const user = await User.findByIdAndUpdate(decoded._id, req.body, {
+    const user = await User.findByIdAndUpdate(req.user._id, req.body, {
       new: true,
       runValidators: true,
     });
@@ -90,15 +83,11 @@ exports.updateUser = async (req, res) => {
  */
 exports.deleteUser = async (req, res) => {
   try {
-    const { token } = req.cookies;
-
-    if (!token) {
+    if (!req.user || !req.user._id) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_TOKEN);
-
-    const user = await User.findByIdAndDelete(decoded._id);
+    const user = await User.findByIdAndDelete(req.user._id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });

@@ -7,7 +7,7 @@ const {
   updateProfile,
   deleteProfile,
   changePassword,
-} = require("../controllers/userController");
+} = require("../controllers/profileController");
 
 // ========== PROTECTED ROUTES (Auth Required) ==========
 // Apply auth middleware to all routes below
@@ -18,6 +18,5 @@ router.get("/view", getProfile);
 router.patch("/edit", updateProfile);
 router.delete("/delete", deleteProfile);
 router.patch("/password", changePassword);
-// router.get('/:userId', getUser);
 
 module.exports = router;

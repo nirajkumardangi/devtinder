@@ -32,7 +32,7 @@ connectionRequest.pre("save", function (next) {
     throw new Error("Cannot send connection request to yourself");
   }
 
-  next(err);
+  next();
 });
 
 module.exports = mongoose.model("ConnectionRequest", connectionRequest);

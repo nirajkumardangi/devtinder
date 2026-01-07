@@ -4,7 +4,7 @@ const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const userSchema = new mongoose.Schema(
+const user = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema(
 );
 
 // GENERATE JWT TOKEN
-userSchema.methods.getJWT = async function () {
+user.methods.getJWT = async function () {
   const token = jwt.sign({ _id: this._id }, process.env.JWT_TOKEN, {
     expiresIn: "7d",
   });
@@ -51,7 +51,7 @@ userSchema.methods.getJWT = async function () {
 };
 
 // HASH PASSWORD BEFORE SAVE
-userSchema.pre("save", async function (next) {
+user.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
   const salt = await bcrypt.genSalt(10);
@@ -60,8 +60,8 @@ userSchema.pre("save", async function (next) {
 });
 
 // VALIDATE PASSWORD
-userSchema.methods.comparePassword = async function (candidatePassword) {
+user.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.model("User", user);

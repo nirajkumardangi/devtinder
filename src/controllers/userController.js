@@ -1,5 +1,5 @@
 require("dotenv").config();
-const User = require("../models/UserSchema");
+const User = require("../models/User");
 const validator = require("validator");
 
 // GET PROFILE

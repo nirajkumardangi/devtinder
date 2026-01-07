@@ -4,7 +4,7 @@ const app = express();
 
 const authRouter = require("./routes/authRouter");
 const profileRouter = require("./routes/profileRouter");
-// const requestRouter = require("./routes/requestRouter");
+const requestRouter = require("./routes/requestRouter");
 // const userRouter = require("./routes/userRouter");
 
 app.use(cookieParser());
@@ -12,7 +12,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
-// app.use("/api/requests", requestRouter);
+app.use("/api/request", requestRouter);
 // app.use("/api/users", userRouter);
 
 module.exports = app;

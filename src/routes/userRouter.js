@@ -2,10 +2,13 @@ const express = require("express");
 const router = express.Router();
 
 const authMiddleware = require("../middlewares/authMiddleware");
-const { getConnectionRequests } = require("../controllers/userController");
+const {
+  getConnectionRequests,
+  getConnections,
+} = require("../controllers/userController");
 
 // User APIs:
-router.use("/requests/received", authMiddleware, getConnectionRequests);
-
+router.get("/requests/received", authMiddleware, getConnectionRequests);
+router.get("/connections", authMiddleware, getConnections);
 
 module.exports = router;

@@ -2,7 +2,7 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const User = require("../models/UserSchema");
 
-const userAuth = async (req, res, next) => {
+module.exports = async (req, res, next) => {
   try {
     // 1. Read token from cookies
     const token = req.cookies?.token;
@@ -23,7 +23,7 @@ const userAuth = async (req, res, next) => {
     }
 
     // 3. Fetch user from database
-    const user = await User.findById(decoded._id).select("-password -__v");
+    const user = await User.findById(decoded._id).select("+password");
 
     if (!user) {
       return res.status(401).json({
@@ -43,6 +43,6 @@ const userAuth = async (req, res, next) => {
   }
 };
 
-module.exports = {
-  userAuth,
-};
+// module.exports = {
+//   authMiddleware,
+// };

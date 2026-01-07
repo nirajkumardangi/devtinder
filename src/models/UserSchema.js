@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       minLength: [2, "Name must be at least 2 characters"],
       maxLength: [20, "Name must be at most 20 characters"],
+      match: [/^[A-Za-z ]+$/, "Name must contain only letters and spaces"],
     },
     email: {
       type: String,
@@ -50,11 +51,12 @@ userSchema.methods.getJWT = async function () {
 };
 
 // HASH PASSWORD BEFORE SAVE
-userSchema.pre("save", async function () {
-  if (!this.isModified("password")) return;
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
 
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
 // VALIDATE PASSWORD

@@ -24,39 +24,15 @@ exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Verify allowed update
-    const ALLOWED_UPDATES = ["name"];
-    const updates = Object.keys(req.body);
-
-    if (updates.length === 0) {
-      return res.status(400).json({
-        message: "No fields provided for update",
-      });
+    if (!req.body.name) {
+      return res.status(400).json({ message: "Name is required" });
     }
 
-    const isValidOperation = updates.every((field) =>
-      ALLOWED_UPDATES.includes(field)
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { name: req.body.name.trim() },
+      { new: true, runValidators: true }
     );
-
-    if (!isValidOperation) {
-      return res.status(400).json({ message: "Invalid update fields" });
-    }
-
-    // Validate & sanitize name
-    if (req.body.name !== undefined) {
-      if (!validator.isLength(req.body.name.trim(), { min: 2, max: 20 })) {
-        return res.status(400).json({
-          message: "Name must be between 2 and 20 characters",
-        });
-      }
-
-      req.body.name = validator.escape(req.body.name.trim());
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(userId, req.body, {
-      new: true,
-      runValidators: true,
-    });
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
@@ -71,7 +47,12 @@ exports.updateProfile = async (req, res) => {
       },
     });
   } catch (error) {
-    return res.status(401).json({ message: "Unauthorized" });
+    if (error.name === "ValidationError") {
+      const message = Object.values(error.errors)[0].message;
+      return res.status(400).json({ message });
+    }
+
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -91,5 +72,39 @@ exports.deleteProfile = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+// CHANGE PASSWORD
+exports.changePassword = async (req, res) => {
+  try {
+    const user = req.user;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        message: "Current and new password are required",
+      });
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    console.log(isMatch);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        message: "Current password is incorrect",
+      });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal server error",
+    });
   }
 };

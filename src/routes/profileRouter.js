@@ -14,9 +14,9 @@ const {
 router.use(authMiddleware);
 
 // Profile APIs:
-router.get("/view", getProfile);
-router.patch("/edit", updateProfile);
-router.delete("/delete", deleteProfile);
-router.patch("/password", changePassword);
+router.get("/view", getProfile); // View own profile
+router.patch("/edit", updateProfile); // Edit profile
+router.delete("/delete", deleteProfile); // Delete profile
+router.patch("/password", changePassword); // Forget password 
 
 module.exports = router;

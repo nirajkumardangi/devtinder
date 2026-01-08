@@ -11,7 +11,7 @@ const {
 router.use(authMiddleware);
 
 // Connection Request APIs
-router.post("/send/:status/:toUserId", sendRequest);
-router.post("/review/:status/:requestId", reviewRequest);
+router.post("/send/:status/:toUserId", sendRequest); // Send connections (intrested + ognored)
+router.post("/review/:status/:requestId", reviewRequest); // Review connections (accept + reject)
 
 module.exports = router;

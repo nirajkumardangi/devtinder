@@ -5,18 +5,17 @@ const authMiddleware = require("../middlewares/authMiddleware");
 const {
   getProfile,
   updateProfile,
-  deleteProfile,
   changePassword,
+  // deleteProfile,
 } = require("../controllers/profileController");
 
-// ========== PROTECTED ROUTES (Auth Required) ==========
-// Apply auth middleware to all routes below
+// Protected routes
 router.use(authMiddleware);
 
-// Profile APIs:
-router.get("/view", getProfile); // View own profile
-router.patch("/edit", updateProfile); // Edit profile
-router.delete("/delete", deleteProfile); // Delete profile
-router.patch("/password", changePassword); // Forget password 
+// Profile APIs
+router.get("/", getProfile); // View own profile
+router.patch("/", updateProfile); // Update profile
+router.patch("/password", changePassword); // Change password
+// router.delete("/", deleteProfile); // Delete profile
 
 module.exports = router;

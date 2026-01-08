@@ -8,9 +8,16 @@ const {
   getFeed
 } = require("../controllers/userController");
 
-// User APIs:
-router.get("/requests/received", authMiddleware, getConnectionRequests); // Get pending requests
-router.get("/connections", authMiddleware, getConnections); // Get all connections
-router.get("/feed", authMiddleware, getFeed); //  Get user feed (paginated)
+// All protected
+router.use(authMiddleware);
+
+// Pending requests (like your "inbox")
+router.get("/requests", getConnectionRequests);
+
+// Accepted matches
+router.get("/connections", getConnections);
+
+// Feed to swipe
+router.get("/feed", getFeed);
 
 module.exports = router;

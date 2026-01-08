@@ -5,14 +5,13 @@ const validator = require("validator");
 // GET PROFILE
 exports.getProfile = async (req, res) => {
   try {
-    const user = req.user;
-
-    if (!user) {
+    if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    res.status(200).json({
-      data: user,
+    return res.status(200).json({
+      message: "Profile fetched",
+      data: req.user,
     });
   } catch (error) {
     return res.status(500).json({ message: "Server error" });
@@ -24,56 +23,71 @@ exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    if (!req.body.name) {
-      return res.status(400).json({ message: "Name is required" });
+    // Allow only selected fields to update
+    const allowedUpdates = [
+      "name",
+      "gender",
+      "age",
+      "skills",
+      "headline",
+      "about",
+      "location",
+    ];
+    const payload = {};
+
+    Object.keys(req.body).forEach((field) => {
+      if (allowedUpdates.includes(field)) payload[field] = req.body[field];
+    });
+
+    // Validate name
+    if (payload.name && payload.name.trim().length < 2) {
+      return res
+        .status(400)
+        .json({ message: "Name must be at least 2 characters" });
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { name: req.body.name.trim() },
-      { new: true, runValidators: true }
-    );
+    // Validate skills
+    if (payload.skills && !Array.isArray(payload.skills)) {
+      return res.status(400).json({ message: "Skills must be an array" });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, payload, {
+      new: true,
+      runValidators: true,
+    });
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({
+    return res.status(200).json({
       message: "Profile updated successfully",
-      data: {
-        id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-      },
+      data: updatedUser,
     });
   } catch (error) {
-    if (error.name === "ValidationError") {
-      const message = Object.values(error.errors)[0].message;
-      return res.status(400).json({ message });
-    }
-
-    res.status(500).json({ message: "Server error" });
+    console.error("Update Error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
 // DELETE PROFILE
-exports.deleteProfile = async (req, res) => {
-  try {
-    const userId = req.user._id;
+// exports.deleteProfile = async (req, res) => {
+//   try {
+//     const userId = req.user._id;
+//     const deletedUser = await User.findByIdAndDelete(userId);
 
-    const deletedUser = await User.findByIdAndDelete(userId);
+//     if (!deletedUser) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
 
-    if (!deletedUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.status(200).json({
-      message: "User deleted successfully",
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
+//     return res.status(200).json({
+//       message: "Account deleted successfully",
+//     });
+//   } catch (error) {
+//     console.error("Delete Error:", error);
+//     return res.status(500).json({ message: "Server error" });
+//   }
+// };
 
 // CHANGE PASSWORD
 exports.changePassword = async (req, res) => {
@@ -87,26 +101,26 @@ exports.changePassword = async (req, res) => {
       });
     }
 
+    // Validate current password
     const isMatch = await user.comparePassword(currentPassword);
-    console.log(isMatch);
-
     if (!isMatch) {
-      return res.status(401).json({
-        message: "Current password is incorrect",
-      });
+      return res.status(401).json({ message: "Current password is incorrect" });
     }
 
+    // Strong password check
+    if (!validator.isStrongPassword(newPassword)) {
+      return res.status(400).json({ message: "New password is weak" });
+    }
+
+    // Update password
     user.password = newPassword;
     await user.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Password changed successfully",
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Internal server error",
-    });
+    console.error("Change Password Error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
-
-// 

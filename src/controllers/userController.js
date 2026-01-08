@@ -1,82 +1,100 @@
 const ConnectionRequest = require("../models/ConnectionRequest");
 const User = require("../models/User");
 
-// Get user feed (users not connected)
+const USER_PREVIEW_FIELDS = "name avatar headline skills";
+
+/**
+ * GET FEED = Users the logged-in user can swipe on
+ * Rules:
+ * - Hide users already connected (accepted/rejected/ignored/pending)
+ * - Hide self
+ * - Paginated
+ */
 exports.getFeed = async (req, res) => {
   try {
-    const loggedInUser = req.user;
-    const page = parseInt(req.query.page) || 1;
-    let limit = parseInt(req.query.limit) || 10;
-    limit = limit > 50 ? 50 : limit;
+    const loggedInUserId = req.user._id;
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 50);
     const skip = (page - 1) * limit;
 
-    // Find all connection requests involving logged in user
-    const connectionRequests = await ConnectionRequest.find({
-      $or: [{ fromUserId: loggedInUser._id }, { toUserId: loggedInUser._id }],
+    // Find all related requests to exclude from the feed
+    const related = await ConnectionRequest.find({
+      $or: [{ fromUserId: loggedInUserId }, { toUserId: loggedInUserId }],
     }).select("fromUserId toUserId");
 
-    // Create set of user IDs to hide from feed
-    const hideUsersFromFeed = new Set();
-    connectionRequests.forEach((req) => {
-      hideUsersFromFeed.add(req.fromUserId.toString());
-      hideUsersFromFeed.add(req.toUserId.toString());
+    const exclude = new Set([loggedInUserId.toString()]);
+    related.forEach((req) => {
+      exclude.add(req.fromUserId.toString());
+      exclude.add(req.toUserId.toString());
     });
 
-    // Find users not in hideUsersFromFeed
     const users = await User.find({
-      $and: [
-        { _id: { $nin: Array.from(hideUsersFromFeed) } },
-        { _id: { $ne: loggedInUser._id } },
-      ],
+      _id: { $nin: [...exclude] },
     })
-      .select("name")
+      .select("name gender age skills headline avatar location")
       .skip(skip)
       .limit(limit);
 
-    res.status(200).json({
-      message: "Feed fetched successfully",
+    return res.status(200).json({
+      message: "Feed fetched",
+      pagination: { page, limit },
+      count: users.length,
       data: users,
     });
   } catch (err) {
-    res.status(400).json({ message: "Internal server error" });
+    console.error("getFeed error:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// Get all the connections for the loggedIn user
+/**
+ * GET CONNECTIONS = Only "accepted" users (mutual)
+ */
 exports.getConnections = async (req, res) => {
   try {
-    const loggedInUser = req.user;
+    const loggedInUserId = req.user._id;
 
-    const connectionRequests = await ConnectionRequest.find({
-      $or: [{ fromUserId: loggedInUser._id }, { toUserId: loggedInUser._id }],
-    }).populate("fromUserId", "name");
+    const connections = await ConnectionRequest.find({
+      status: "accepted",
+      $or: [{ fromUserId: loggedInUserId }, { toUserId: loggedInUserId }],
+    })
+      .populate("fromUserId", USER_PREVIEW_FIELDS)
+      .populate("toUserId", USER_PREVIEW_FIELDS);
 
-    const data = connectionRequests.map((row) => row.fromUserId);
+    const formatted = connections.map(({ fromUserId, toUserId }) =>
+      fromUserId._id.equals(loggedInUserId) ? toUserId : fromUserId
+    );
 
-    res.status(200).json({
-      message: "All connection fetch successfully",
-      data,
+    return res.status(200).json({
+      message: "Connections fetched",
+      count: formatted.length,
+      data: formatted,
     });
   } catch (err) {
-    res.status(400).send("Error: " + err.message);
+    console.error("getConnections error:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// Get all the pending connection request for the loggedIn user
+/**
+ * GET PENDING REQUESTS = "interested" requests for logged-in user
+ */
 exports.getConnectionRequests = async (req, res) => {
   try {
-    const loggedInUser = req.user;
+    const loggedInUserId = req.user._id;
 
-    const connectionRequests = await ConnectionRequest.find({
-      toUserId: loggedInUser._id,
+    const pending = await ConnectionRequest.find({
+      toUserId: loggedInUserId,
       status: "interested",
-    }).populate("fromUserId", "name");
+    }).populate("fromUserId", USER_PREVIEW_FIELDS);
 
-    res.send({
-      message: "Pending requests fetched successfully",
-      data: connectionRequests,
+    return res.status(200).json({
+      message: "Pending requests fetched",
+      count: pending.length,
+      data: pending,
     });
   } catch (err) {
-    res.status(400).send("Error: " + err.message);
+    console.error("getConnectionRequests error:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };

@@ -7,7 +7,7 @@ const {
   reviewRequest,
 } = require("../controllers/requestController");
 
-// ========== PROTECTED ROUTES (Auth Required) ==========
+// All routes protected
 router.use(authMiddleware);
 
 // Connection Request APIs

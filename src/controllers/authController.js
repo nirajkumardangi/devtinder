@@ -7,44 +7,61 @@ const validator = require("validator");
  */
 exports.signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const {
+      name,
+      email,
+      password,
+      gender,
+      age,
+      skills,
+      headline,
+      about,
+      location,
+    } = req.body;
 
+    // Required fields
     if (!name || !email || !password) {
       return res
         .status(400)
-        .json({ message: "All required fields must be provided" });
+        .json({ message: "Name, email & password are required" });
     }
 
+    // Email format
     if (!validator.isEmail(email)) {
       return res.status(400).json({ message: "Invalid email format" });
     }
 
+    // Password validation
     if (!validator.isStrongPassword(password)) {
-      return res.status(400).json({ message: "Weak password" });
+      return res.status(400).json({
+        message:
+          "Password must be strong (min 8 chars, symbols, upper/lower case, numbers)",
+      });
     }
 
+    // Check existing user before creating
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(409).json({ message: "Email already registered" });
+    }
+
+    // Create user
     const user = await User.create({
       name: name.trim(),
       email: email.toLowerCase(),
-      password, // 👈 plain password, model hashes it
+      password,
+      gender,
+      age,
+      skills,
+      headline,
+      about,
+      location,
     });
 
-    res.status(201).json({
-      message: "User signed up successfully",
-      data: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-    });
+    return res.status(201).json({ message: `${name} signup successfully` });
   } catch (error) {
-    console.error(error);
-
-    if (error.code === 11000) {
-      return res.status(409).json({ message: "Email already exists" });
-    }
-
-    res.status(500).json({ message: "Server error" });
+    console.error("Signup Error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -55,62 +72,49 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Check for missing fields
+    // Required
     if (!email || !password) {
-      return res.status(400).json({
-        message: "Enter email & password",
-      });
+      return res.status(400).json({ message: "Enter email & password" });
     }
 
-    // 2. Find user (normalize email)
+    // Find user
     const user = await User.findOne({ email: email.toLowerCase() }).select(
       "+password"
     );
-
-    // 3. Check if user exists
     if (!user) {
-      return res.status(401).json({
-        message: "User not found",
-      });
+      return res.status(401).json({ message: "User not found" });
     }
 
-    // 4. Verify password
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        message: "Invalid credentials",
-      });
+    // Verify password
+    const passwordMatch = await user.comparePassword(password);
+    if (!passwordMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 5. Create JWT token
+    // JWT
     const token = await user.getJWT();
 
-    // 6. Send token in cookie
+    // Secure cookie
     res.cookie("token", token, {
       maxAge: 8 * 3600000,
     });
 
-    // 7. Success response
-    res.status(200).json({
-      message: "Login successful",
-      data: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
+    // Success response
+    return res.status(200).json({
+      message: `${user.name} Login successful`,
     });
   } catch (error) {
     console.error("Login Error:", error);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
 /**
  * LOG-OUT
  */
-exports.logout = async (req, res) => {
-  res.cookie("token", null, { expires: new Date(Date.now()) });
-  res.status(200).json({
-    message: "Logout successful!",
+exports.logout = (req, res) => {
+  res.cookie("token", "", { expires: new Date(0) });
+  return res.status(200).json({
+    message: "Logout successful",
   });
 };

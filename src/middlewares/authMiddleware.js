@@ -9,40 +9,44 @@ module.exports = async (req, res, next) => {
 
     if (!token) {
       return res.status(401).json({
-        message: "Authentication required. Please login.",
+        success: false,
+        message: "Not authenticated",
       });
     }
 
-    // 2.Verify JWT
-    const decoded = jwt.verify(token, process.env.JWT_TOKEN);
-
-    if (!decoded || !decoded._id) {
+    // 2. Verify JWT
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_TOKEN);
+    } catch (err) {
       return res.status(401).json({
-        message: "Invalid token",
+        success: false,
+        message: "Session expired or invalid token",
       });
     }
 
     // 3. Fetch user from database
-    const user = await User.findById(decoded._id).select("+password");
+    const user = await User.findById(decoded._id).select(
+      "name email gender avatar headline age skills"
+    );
 
     if (!user) {
       return res.status(401).json({
-        message: "User not found or account deleted",
+        success: false,
+        message: "User not found or account removed",
       });
     }
 
-    // 4. Attach user to request
+    // 5. Attach user to request context
     req.user = user;
 
-    // 5. Continue to next middleware / route
-    next();
-  } catch (error) {
-    return res.status(401).json({
-      message: "Authentication failed",
+    // 6. Continue execution
+    return next();
+  } catch (err) {
+    console.error("Auth Middleware Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Internal authentication error",
     });
   }
 };
-
-// module.exports = {
-//   authMiddleware,
-// };

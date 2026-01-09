@@ -42,6 +42,8 @@ const userSchema = new mongoose.Schema(
     // Additional DevTinder profile fields
     gender: {
       type: String,
+      trim: true,
+      lowercase: true,
       enum: ["male", "female", "other"],
       default: "other",
     },
@@ -54,6 +56,8 @@ const userSchema = new mongoose.Schema(
 
     skills: {
       type: [String],
+      lowercase: true,
+      trim: true,
       default: [],
     },
 

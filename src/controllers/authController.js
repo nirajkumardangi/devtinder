@@ -7,17 +7,7 @@ const validator = require("validator");
  */
 exports.signup = async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      password,
-      gender,
-      age,
-      skills,
-      headline,
-      about,
-      location,
-    } = req.body;
+    const { name, email, password } = req.body;
 
     // Required fields
     if (!name || !email || !password) {
@@ -50,12 +40,6 @@ exports.signup = async (req, res) => {
       name: name.trim(),
       email: email.toLowerCase(),
       password,
-      gender,
-      age,
-      skills,
-      headline,
-      about,
-      location,
     });
 
     return res.status(201).json({ message: `${name} signup successfully` });
@@ -77,6 +61,11 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: "Enter email & password" });
     }
 
+    // Validate Email
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ message: "Envalid email format" });
+    }
+
     // Find user
     const user = await User.findOne({ email: email.toLowerCase() }).select(
       "+password"
@@ -88,7 +77,7 @@ exports.login = async (req, res) => {
     // Verify password
     const passwordMatch = await user.comparePassword(password);
     if (!passwordMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
     // JWT
@@ -96,12 +85,13 @@ exports.login = async (req, res) => {
 
     // Secure cookie
     res.cookie("token", token, {
-      maxAge: 8 * 3600000,
+      maxAge: 7 * 3600000,
     });
 
     // Success response
     return res.status(200).json({
       message: `${user.name} Login successful`,
+      user,
     });
   } catch (error) {
     console.error("Login Error:", error);

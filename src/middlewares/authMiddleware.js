@@ -10,7 +10,7 @@ module.exports = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: "Not authenticated",
+        message: "Not authenticated : Please Login!",
       });
     }
 
@@ -26,9 +26,7 @@ module.exports = async (req, res, next) => {
     }
 
     // 3. Fetch user from database
-    const user = await User.findById(decoded._id).select(
-      "name email gender avatar headline age skills"
-    );
+    const user = await User.findById(decoded._id).select("-password -__v");
 
     if (!user) {
       return res.status(401).json({

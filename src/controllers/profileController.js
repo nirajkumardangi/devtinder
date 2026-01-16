@@ -6,15 +6,20 @@ const validator = require("validator");
 exports.getProfile = async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
     }
 
     return res.status(200).json({
-      message: "Profile fetched",
-      data: req.user,
+      success: true,
+      message: "Profile fetched successfully",
+      user: req.user,
     });
   } catch (error) {
-    return res.status(500).json({ message: "Server error" });
+    console.error("Profile Fetch Error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -23,33 +28,53 @@ exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Allow only selected fields to update
     const allowedUpdates = [
       "name",
       "gender",
       "age",
-      "skills",
       "headline",
       "about",
+      "skills",
+      "avatar",
       "location",
+      "social",
     ];
+
     const payload = {};
+    for (const key of Object.keys(req.body)) {
+      if (allowedUpdates.includes(key)) payload[key] = req.body[key];
+    }
 
-    Object.keys(req.body).forEach((field) => {
-      if (allowedUpdates.includes(field)) payload[field] = req.body[field];
-    });
-
-    // Validate name
+    // VALIDATIONS
     if (payload.name && payload.name.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Name must have at least 2 characters",
+      });
+    }
+
+    if (payload.skills && !Array.isArray(payload.skills)) {
       return res
         .status(400)
-        .json({ message: "Name must be at least 2 characters" });
+        .json({ success: false, message: "Skills must be an array" });
     }
 
-    // Validate skills
-    if (payload.skills && !Array.isArray(payload.skills)) {
-      return res.status(400).json({ message: "Skills must be an array" });
+    if (payload.age && !Number.isInteger(payload.age)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Age must be a number" });
     }
+
+    // if (payload.social && typeof payload.social === "object") {
+    //   for (const link of Object.values(payload.social)) {
+    //     if (link && !validator.isURL(link, { require_protocol: true })) {
+    //       return res.status(400).json({
+    //         success: false,
+    //         message: "Social links must be valid URLs",
+    //       });
+    //     }
+    //   }
+    // }
 
     const updatedUser = await User.findByIdAndUpdate(userId, payload, {
       new: true,
@@ -57,37 +82,21 @@ exports.updateProfile = async (req, res) => {
     });
 
     if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     return res.status(200).json({
+      success: true,
       message: "Profile updated successfully",
-      data: updatedUser,
+      user: updatedUser,
     });
   } catch (error) {
     console.error("Update Error:", error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
-// DELETE PROFILE
-// exports.deleteProfile = async (req, res) => {
-//   try {
-//     const userId = req.user._id;
-//     const deletedUser = await User.findByIdAndDelete(userId);
-
-//     if (!deletedUser) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     return res.status(200).json({
-//       message: "Account deleted successfully",
-//     });
-//   } catch (error) {
-//     console.error("Delete Error:", error);
-//     return res.status(500).json({ message: "Server error" });
-//   }
-// };
 
 // CHANGE PASSWORD
 exports.changePassword = async (req, res) => {
@@ -97,30 +106,36 @@ exports.changePassword = async (req, res) => {
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
+        success: false,
         message: "Current and new password are required",
       });
     }
 
-    // Validate current password
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
-      return res.status(401).json({ message: "Current password is incorrect" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Current password is incorrect" });
     }
 
-    // Strong password check
-    if (!validator.isStrongPassword(newPassword)) {
-      return res.status(400).json({ message: "New password is weak" });
+    if (!validator.isStrongPassword(newPassword, { minSymbols: 1 })) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "New password must be stronger (min: 8 chars, upper, lower, number, symbol)",
+      });
     }
 
-    // Update password
     user.password = newPassword;
     await user.save();
 
-    return res.status(200).json({
-      message: "Password changed successfully",
-    });
+    return res
+      .status(200)
+      .json({ success: true, message: "Password changed successfully" });
   } catch (error) {
     console.error("Change Password Error:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
 };

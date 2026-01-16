@@ -1,6 +1,7 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const app = express();
+const cors = require("cors");
 
 // Routers
 const authRouter = require("./routes/authRouter");
@@ -9,6 +10,10 @@ const requestRouter = require("./routes/requestRouter");
 const userRouter = require("./routes/userRouter");
 
 // 1. Global Middlewares
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
 app.use(cookieParser());
 app.use(express.json());
 

@@ -115,7 +115,7 @@ exports.getConnections = async (req, res) => {
 
     // Step 2: Extract the connected user (not self)
     const data = connections.map((row) => {
-      if (row.fromUserId._id.toString() === loggedInUser._id.toString()) {
+      if (row.fromUserId._id.toString() === loggedInUserId.toString()) {
         return row.toUserId; // Return the other person
       }
       return row.fromUserId; // Return the other person
@@ -123,8 +123,8 @@ exports.getConnections = async (req, res) => {
 
     return res.status(200).json({
       message: "Connections fetched",
-      count: formatted.length,
-      data: formatted,
+      count: data.length,
+      data,
     });
   } catch (err) {
     console.error("getConnections error:", err);

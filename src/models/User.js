@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema(
       },
     },
 
-    // Additional DevTinder profile fields
+    // ==== Dev Profile ====
     gender: {
       type: String,
       trim: true,
@@ -54,13 +54,6 @@ const userSchema = new mongoose.Schema(
       max: [100, "Age must be realistic"],
     },
 
-    skills: {
-      type: [String],
-      lowercase: true,
-      trim: true,
-      default: [],
-    },
-
     headline: {
       type: String,
       maxLength: [80, "Headline must be under 80 characters"],
@@ -68,39 +61,56 @@ const userSchema = new mongoose.Schema(
 
     about: {
       type: String,
-      maxLength: [600, "About section must be under 600 characters"],
+      maxLength: [600, "About must be under 600 characters"],
+    },
+
+    skills: {
+      type: [String],
+      default: [],
+      lowercase: true,
+      trim: true,
+      validate: {
+        validator: (v) => v.length <= 10,
+        message: "Maximum 10 skills allowed",
+      },
     },
 
     avatar: {
-      type: String, // URL to hosted image
+      type: String,
       default: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
     },
 
     location: {
-      city: String,
-      country: String,
+      city: { type: String, trim: true },
+      country: { type: String, trim: true },
+    },
+
+    // ==== New Social Links ====
+    social: {
+      github: { type: String, trim: true, lowercase: true },
+      linkedin: { type: String, trim: true },
+      website: { type: String, trim: true },
     },
   },
   { timestamps: true }
 );
 
-// JWT generator
+// JWT
 userSchema.methods.getJWT = function () {
   return jwt.sign({ _id: this._id, email: this.email }, process.env.JWT_TOKEN, {
     expiresIn: "7d",
   });
 };
 
-// Hash password before save
+// Hash password
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-// Compare password for login
+// Compare password
 userSchema.methods.comparePassword = function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };

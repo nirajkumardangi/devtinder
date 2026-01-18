@@ -62,8 +62,6 @@ exports.reviewRequest = async (req, res) => {
     const loggedInUserId = req.user._id;
     const { status, requestId } = req.params;
 
-    console.log(req.params);
-
     const allowedStatus = ["accepted", "rejected"];
     if (!allowedStatus.includes(status)) {
       return res.status(400).json({ message: `Invalid status "${status}"` });

@@ -1,7 +1,7 @@
 const ConnectionRequest = require("../models/ConnectionRequest");
 const User = require("../models/User");
 
-const USER_PREVIEW_FIELDS = "name avatar headline skills";
+const USER_PREVIEW_FIELDS = "name avatar headline skills about";
 
 /**
  * GET FEED = Users the logged-in user can swipe on
@@ -33,7 +33,7 @@ exports.getFeed = async (req, res) => {
       exclude.add(req.toUserId.toString());
     });
 
-    // Build query wit filter
+    // Build query with filter
     const query = {
       _id: { $nin: [...exclude] },
     };
@@ -61,7 +61,7 @@ exports.getFeed = async (req, res) => {
 
     // Get paginated users not in hidden set
     const users = await User.find(query)
-      .select("name gender age skills headline avatar location")
+      .select("name gender age skills headline about avatar location")
       .sort({ createdAt: -1 }) // Newest users first
       .skip(skip)
       .limit(limit);

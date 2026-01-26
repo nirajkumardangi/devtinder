@@ -6,46 +6,52 @@ const validator = require("validator");
  * SIGN UP
  */
 exports.signup = async (req, res) => {
+  const { name, email, password, skills, location, headline } = req.body;
+
   try {
-    const { name, email, password } = req.body;
+    if (!name || !email || !password || !headline)
+      return res.status(400).json({ message: "All fields are required" });
 
-    // Required fields
-    if (!name || !email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Name, email & password are required" });
-    }
-
-    // Email format
-    if (!validator.isEmail(email)) {
+    if (!validator.isEmail(email))
       return res.status(400).json({ message: "Invalid email format" });
-    }
 
-    // Password validation
-    if (!validator.isStrongPassword(password)) {
+    if (!validator.isStrongPassword(password))
       return res.status(400).json({
         message:
           "Password must be strong (min 8 chars, symbols, upper/lower case, numbers)",
       });
+
+    if (!Array.isArray(skills) || skills.length === 0)
+      return res.status(400).json({ message: "Skills cannot be empty" });
+
+    if (
+      !location ||
+      typeof location !== "object" ||
+      !location.city ||
+      !location.country
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Location must include city & country" });
     }
 
-    // Check existing user before creating
     const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
+    if (existingUser)
       return res.status(409).json({ message: "Email already registered" });
-    }
 
-    // Create user
-    const user = await User.create({
+    await User.create({
       name: name.trim(),
       email: email.toLowerCase(),
       password,
+      skills,
+      headline,
+      location,
     });
 
     return res.status(201).json({ message: `${name} signup successfully` });
   } catch (error) {
     console.error("Signup Error:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "signup failed" });
   }
 };
 
@@ -68,7 +74,7 @@ exports.login = async (req, res) => {
 
     // Find user
     const user = await User.findOne({ email: email.toLowerCase() }).select(
-      "+password"
+      "+password",
     );
     if (!user) {
       return res.status(401).json({ message: "User not found" });

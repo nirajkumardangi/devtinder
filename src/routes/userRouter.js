@@ -5,7 +5,8 @@ const authMiddleware = require("../middlewares/authMiddleware");
 const {
   getConnectionRequests,
   getConnections,
-  getFeed
+  getFeed,
+  removeConnection,
 } = require("../controllers/userController");
 
 // All protected
@@ -16,6 +17,9 @@ router.get("/requests", getConnectionRequests);
 
 // Accepted matches
 router.get("/connections", getConnections);
+
+// Remove Connections
+router.delete("/connections/:id", removeConnection);
 
 // Feed to swipe
 router.get("/feed", getFeed);

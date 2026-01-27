@@ -1,7 +1,8 @@
 const ConnectionRequest = require("../models/ConnectionRequest");
 const User = require("../models/User");
 
-const USER_PREVIEW_FIELDS = "name avatar headline skills about";
+const USER_PREVIEW_FIELDS =
+  "name age avatar headline skills about location social createdAt";
 
 /**
  * GET FEED = Users the logged-in user can swipe on
@@ -128,6 +129,32 @@ exports.getConnections = async (req, res) => {
     });
   } catch (err) {
     console.error("getConnections error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * REMOVE CONNECTION BY ID
+ */
+exports.removeConnection = async (req, res) => {
+  const loggedInUserId = req.user._id;
+  const otherUserId = req.params.id;
+
+  try {
+    await ConnectionRequest.deleteMany({
+      status: "accepted",
+      $or: [
+        { fromUserId: loggedInUserId, toUserId: otherUserId },
+        { fromUserId: otherUserId, toUserId: loggedInUserId },
+      ],
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Connection removed successfully",
+    });
+  } catch (error) {
+    console.error("removeConnection error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
